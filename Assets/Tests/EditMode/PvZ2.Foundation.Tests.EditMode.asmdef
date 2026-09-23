@@ -1,0 +1,21 @@
+{
+  "name": "PvZ2.Foundation.Tests.EditMode",
+  "rootNamespace": "PvZ2.Foundation.Tests",
+  "references": [
+    "PvZ2.Foundation"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": false,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false,
+  "optionalUnityReferences": [
+    "TestAssemblies"
+  ]
+}
