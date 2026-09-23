@@ -139,11 +139,13 @@ namespace PvZ2.Foundation
             schedule.Sort((a, b) => a.time.CompareTo(b.time));
         }
 
-        void Spawn(ScheduledSpawn item)
+void Spawn(ScheduledSpawn item)
         {
+            int laneCount = spawner != null && spawner.Grid != null ? spawner.Grid.Rows : 0;
+            if (laneCount <= 0) return;
             int lane = item.laneMode == LaneMode.FixedLane
-                ? Mathf.Clamp(item.lane, 0, 4)
-                : UnityEngine.Random.Range(0, 5);
+                ? Mathf.Clamp(item.lane, 0, laneCount - 1)
+                : UnityEngine.Random.Range(0, laneCount);
             ZombieController zombie = spawner.SpawnZombie(item.data, lane);
             if (zombie == null) return;
             alive.Add(zombie);

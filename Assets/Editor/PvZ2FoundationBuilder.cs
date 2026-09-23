@@ -114,10 +114,10 @@ public static class PvZ2FoundationBuilder
     {
         var cameraObject = new GameObject("Main Camera");
         cameraObject.tag = "MainCamera";
-        cameraObject.transform.position = new Vector3(-0.7f, 0f, -10f);
+        cameraObject.transform.position = new Vector3(-0.15f, 0.08f, -10f);
         Camera camera = cameraObject.AddComponent<Camera>();
         camera.orthographic = true;
-        camera.orthographicSize = 4.15f;
+        camera.orthographicSize = 4.25f;
         camera.clearFlags = CameraClearFlags.SolidColor;
         camera.backgroundColor = new Color(0.08f, 0.16f, 0.11f);
         camera.nearClipPlane = 0.1f;
@@ -135,46 +135,38 @@ public static class PvZ2FoundationBuilder
         light.intensity = 1f;
     }
 
-    private static void CreateBattlefieldVisuals(Sprite sprite)
+private static void CreateBattlefieldVisuals(Sprite sprite)
     {
         var environment = new GameObject("Battlefield Visuals");
         CreateShape("Field Background", environment.transform, sprite,
-            new Color(0.14f, 0.28f, 0.16f), new Vector3(-0.7f, 0f, 1f),
-            new Vector3(15.5f, 8f, 1f), "Background", -10);
+            new Color(0.08f, 0.17f, 0.09f), new Vector3(-0.15f, 0f, 1f),
+            new Vector3(12f, 6.7f, 1f), "Background", -10);
         CreateShape("Home Strip", environment.transform, sprite,
-            new Color(0.47f, 0.31f, 0.18f), new Vector3(-7.05f, 0f, 0.2f),
-            new Vector3(1.35f, 5.75f, 1f), "Board", 0);
-        CreateShape("Zombie Entry Strip", environment.transform, sprite,
-            new Color(0.18f, 0.23f, 0.20f), new Vector3(5.6f, 0f, 0.2f),
-            new Vector3(1.45f, 5.75f, 1f), "Board", 0);
-        CreateShape("Home Door", environment.transform, sprite,
-            new Color(0.23f, 0.12f, 0.06f), new Vector3(-7.05f, 0.15f, 0.1f),
-            new Vector3(0.72f, 1.65f, 1f), "Board", 2);
-
+            new Color(0.47f, 0.31f, 0.18f), new Vector3(-4.57f, 0f, 0.2f),
+            new Vector3(0.72f, 5.6f, 1f), "Board", 0);
+        CreateShape("Zombie Entry", environment.transform, sprite,
+            new Color(0.18f, 0.23f, 0.20f), new Vector3(4.29f, 0f, 0.2f),
+            new Vector3(0.52f, 5.6f, 1f), "Board", 0);
         for (int row = 0; row < 5; row++)
-        {
             CreateShape($"Entry Marker {row}", environment.transform, sprite,
-                new Color(0.36f, 0.45f, 0.38f), new Vector3(5.6f, -2.1f + row * 1.05f, 0.1f),
-                new Vector3(0.45f, 0.12f, 1f), "Board", 2);
-        }
+                new Color(0.55f, 0.18f, 0.12f), new Vector3(3.9f, -2.24f + row * 1.12f, 0.1f),
+                new Vector3(0.1f, 0.74f, 1f), "Board", 2);
     }
 
-    private static GridManager CreateGrid(Sprite sprite)
+private static GridManager CreateGrid(Sprite sprite)
     {
         var gridObject = new GameObject("GridManager");
         GridManager grid = gridObject.AddComponent<GridManager>();
-        grid.BuildGrid(5, 9, new Vector2(-5.75f, -2.1f), new Vector2(1.25f, 1.05f), sprite);
-
+        grid.BuildGrid(5, 9, new Vector2(-3.75f, -2.24f), new Vector2(.9f, 1.12f), sprite);
         foreach (GridCell cell in gridObject.GetComponentsInChildren<GridCell>())
         {
             SpriteRenderer renderer = cell.GetComponent<SpriteRenderer>();
-            renderer.sortingLayerName = "Board";
-            renderer.sortingOrder = 1;
-            renderer.color = ((cell.Row + cell.Column) & 1) == 0
+            renderer.color = (cell.Row + cell.Column) % 2 == 0
                 ? new Color(0.27f, 0.58f, 0.23f)
                 : new Color(0.24f, 0.54f, 0.21f);
+            renderer.sortingLayerName = "Board";
+            renderer.sortingOrder = 1;
         }
-
         return grid;
     }
 

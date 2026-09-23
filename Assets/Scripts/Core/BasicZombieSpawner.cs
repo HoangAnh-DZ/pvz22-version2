@@ -14,7 +14,9 @@ namespace PvZ2.Foundation
 
         
         public ZombieData NormalZombie => normalZombie;
-        public ZombieData ConeheadZombie => coneheadZombie;
+        
+        public GridManager Grid => grid;
+public ZombieData ConeheadZombie => coneheadZombie;
 public ZombieController LastSpawned { get; private set; }
         public int SpawnCount { get; private set; }
 

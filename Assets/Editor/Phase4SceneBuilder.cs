@@ -25,18 +25,25 @@ public static class Phase4SceneBuilder
         GridManager grid = Object.FindFirstObjectByType<GridManager>();
         GameObject systems = GameObject.Find("Gameplay Systems");
         BasicZombieSpawner spawner = systems.GetComponent<BasicZombieSpawner>();
-        PlantPlacementController placement = systems.GetComponent<PlantPlacementController>();
+        
+        LaneCombatRegistry registry = systems.GetComponent<LaneCombatRegistry>();
+PlantPlacementController placement = systems.GetComponent<PlantPlacementController>();
 
         BattlefieldProjection projection = grid.GetComponent<BattlefieldProjection>();
         if (projection == null) projection = grid.gameObject.AddComponent<BattlefieldProjection>();
-        projection.Configure(new Vector2(-.55f, -.03f), new Vector2(1.24f, 1.03f), .9f, 1.08f);
-        grid.BuildProjectedGrid(5, 9, projection, square);
+        projection.Configure(new Vector2(-.15f, 0f), new Vector2(.9f, 1.12f), 1f, 1f);
+        
+        registry.Configure(grid.Rows);
+        spawner.Configure(registry, grid, GameObject.Find("Zombies").transform,
+            grid.GetLaneRightBoundary(0, .65f), grid.GetLaneLeftBoundary(0, .45f),
+            spawner.NormalZombie, spawner.ConeheadZombie);
+grid.BuildProjectedGrid(5, 9, projection, square);
         StyleGrid(grid);
 
         Camera camera = Camera.main;
-        camera.transform.position = new Vector3(-.55f, .12f, -10f);
+        camera.transform.position = new Vector3(-.15f, .08f, -10f);
         camera.orthographic = true;
-        camera.orthographicSize = 4.02f;
+        camera.orthographicSize = 4.25f;
         camera.backgroundColor = new Color(.055f, .105f, .065f);
         BuildEnvironment(grid, square);
 
@@ -107,26 +114,29 @@ public static class Phase4SceneBuilder
         }
     }
 
-    static void BuildEnvironment(GridManager grid, Sprite square)
+static void BuildEnvironment(GridManager grid, Sprite square)
     {
         GameObject old = GameObject.Find("Battlefield Visuals");
         if (old != null) Object.DestroyImmediate(old);
         GameObject root = new("Battlefield Visuals");
+        float boardHeight = grid.Rows * grid.CellSize.y;
+        float left = grid.GetLaneLeftBoundary(0);
+        float right = grid.GetLaneRightBoundary(0);
         Shape("Deep Green Backdrop", root.transform, square, new Color(.08f, .17f, .09f),
-            new Vector3(-.55f, 0f, 1f), new Vector3(16f, 8.2f, 1f), "Background", -20);
-        Shape("Home Patio", root.transform, square, new Color(.49f, .33f, .18f),
-            new Vector3(-6.72f, -.05f, .2f), new Vector3(1.05f, 5.72f, 1f), "Board", 0);
+            new Vector3(-.15f, 0f, 1f), new Vector3(12f, 6.7f, 1f), "Background", -20);
+        Shape("Home Strip", root.transform, square, new Color(.49f, .33f, .18f),
+            new Vector3(left - .42f, 0f, .2f), new Vector3(.72f, boardHeight, 1f), "Board", 0);
         Shape("Zombie Entry", root.transform, square, new Color(.19f, .245f, .19f),
-            new Vector3(5.7f, -.05f, .2f), new Vector3(.9f, 5.72f, 1f), "Board", 0);
+            new Vector3(right + .34f, 0f, .2f), new Vector3(.52f, boardHeight, 1f), "Board", 0);
         Shape("Stone Path", root.transform, square, new Color(.34f, .36f, .27f),
-            new Vector3(-6.72f, -.05f, .1f), new Vector3(.24f, 5.35f, 1f), "Board", 2);
+            new Vector3(left - .42f, 0f, .1f), new Vector3(.14f, boardHeight * .94f, 1f), "Board", 2);
         for (int row = 0; row < grid.Rows; row++)
         {
             float y = grid.GetCellCenter(row, 0).y;
             Shape($"Home Marker {row}", root.transform, square, new Color(.72f, .58f, .3f),
-                new Vector3(grid.GetLaneLeftBoundary(row, .06f), y, 0f), new Vector3(.18f, .72f, 1f), "Board", 6 + row);
+                new Vector3(left - .05f, y, 0f), new Vector3(.1f, .74f, 1f), "Board", 6);
             Shape($"Entry Marker {row}", root.transform, square, new Color(.55f, .18f, .12f),
-                new Vector3(grid.GetLaneRightBoundary(row, .06f), y, 0f), new Vector3(.18f, .72f, 1f), "Board", 6 + row);
+                new Vector3(right + .05f, y, 0f), new Vector3(.1f, .74f, 1f), "Board", 6);
         }
     }
 

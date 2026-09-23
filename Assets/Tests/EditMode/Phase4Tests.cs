@@ -62,19 +62,31 @@ public sealed class Phase4Tests
         Object.DestroyImmediate(r.level);
     }
 
-    [Test] public void Projection_LowerLaneIsWider()
+[Test] public void Projection_LowerLaneIsWider()
     {
         GameObject go = new(); BattlefieldProjection p = go.AddComponent<BattlefieldProjection>();
-        Assert.Greater(p.GetCellSize(0, 5).x, p.GetCellSize(4, 5).x);
+        p.Configure(Vector2.zero, new Vector2(.9f, 1.12f));
+        Assert.AreEqual(p.GetCellSize(0, 5), p.GetCellSize(4, 5));
+        Assert.Greater(p.GetCellSize(0, 5).y, p.GetCellSize(0, 5).x);
         Object.DestroyImmediate(go);
     }
 
-    [Test] public void Projection_MapsAllFortyFiveCells()
+[Test] public void Projection_MapsAllFortyFiveCells()
     {
         Rig r = CreateRig();
+        Assert.AreEqual(5, r.grid.Rows);
+        Assert.AreEqual(9, r.grid.Columns);
         Assert.AreEqual(45, r.grid.GetComponentsInChildren<GridCell>().Length);
-        Assert.IsTrue(r.grid.TryWorldToCell(r.grid.GetCellCenter(3, 7), out GridCell cell));
-        Assert.AreEqual(3, cell.Row); Assert.AreEqual(7, cell.Column);
+        for (int row = 0; row < 5; row++)
+        for (int column = 0; column < 9; column++)
+        {
+            GridCell expected = r.grid.GetCell(row, column);
+            Assert.NotNull(expected);
+            Assert.IsTrue(r.grid.TryWorldToCell(expected.WorldPosition, out GridCell mapped));
+            Assert.AreSame(expected, mapped);
+            Assert.AreEqual(r.grid.GetCellCenter(0, column).x, expected.WorldPosition.x, .0001f);
+            Assert.AreEqual(r.grid.GetCellCenter(row, 0).y, expected.WorldPosition.y, .0001f);
+        }
         Dispose(r);
     }
 
@@ -141,5 +153,20 @@ public sealed class Phase4Tests
         Assert.NotNull(data); Assert.AreEqual(3, data.waves.Count);
         Assert.IsTrue(data.waves[1].spawns.Any(x => x.zombie != null && x.zombie.id.Contains("cone")));
         Assert.IsTrue(data.waves[2].spawns.Any(x => x.zombie != null && x.zombie.id.Contains("cone")));
+    }
+
+
+[Test] public void WaveManager_RandomSpawnUsesOnlyFourValidLanes()
+    {
+        Rig r = CreateRig();
+        ZombieSpawnEntry entry = r.level.waves[0].spawns[0];
+        entry.amount = 24;
+        entry.spawnInterval = .01f;
+        entry.laneMode = LaneMode.RandomValidLane;
+        r.waves.BeginLevel();
+        r.waves.Tick(1f);
+        ZombieController[] zombies = r.root.GetComponentsInChildren<ZombieController>(true);
+        Assert.IsTrue(zombies.Where(z => z.gameObject.activeSelf).All(z => z.Lane >= 0 && z.Lane < r.grid.Rows));
+        Dispose(r);
     }
 }

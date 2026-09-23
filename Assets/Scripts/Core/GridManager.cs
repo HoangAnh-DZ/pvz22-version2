@@ -6,8 +6,8 @@ namespace PvZ2.Foundation
     {
         [SerializeField, Min(1)] private int rows = 5;
         [SerializeField, Min(1)] private int columns = 9;
-        [SerializeField] private Vector2 origin = new(-5.75f, -2.1f);
-        [SerializeField] private Vector2 cellSize = new(1.25f, 1.05f);
+        [SerializeField] private Vector2 origin = new(-4.15f, -1.68f);
+        [SerializeField] private Vector2 cellSize = new(.9f, 1.12f);
         [SerializeField] private BattlefieldProjection projection;
         private GridCell[,] cells;
         public int Rows => rows;
