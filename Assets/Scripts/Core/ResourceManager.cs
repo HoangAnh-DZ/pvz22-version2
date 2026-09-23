@@ -33,7 +33,15 @@ namespace PvZ2.Foundation
                 return;
             }
 
-            currentSun += amount;
+            int nextSun = amount > int.MaxValue - currentSun
+                ? int.MaxValue
+                : currentSun + amount;
+            if (nextSun == currentSun)
+            {
+                return;
+            }
+
+            currentSun = nextSun;
             OnSunChanged?.Invoke(currentSun);
         }
 

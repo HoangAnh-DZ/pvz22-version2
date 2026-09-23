@@ -89,6 +89,20 @@ namespace PvZ2.Foundation.Tests
         }
 
         [Test]
+        public void Resource_AddAtLimit_NeverBecomesNegative()
+        {
+            resources.ConfigureStartingSun(int.MaxValue - 25);
+            int eventCount = 0;
+            resources.OnSunChanged += _ => eventCount++;
+
+            resources.AddSun(50);
+            resources.AddSun(50);
+
+            Assert.That(resources.CurrentSun, Is.EqualTo(int.MaxValue));
+            Assert.That(eventCount, Is.EqualTo(1));
+        }
+
+        [Test]
         public void Resource_AddNonPositive_ChangesNothingAndRaisesNoEvent()
         {
             int eventCount = 0;
