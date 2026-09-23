@@ -45,14 +45,14 @@ restartButton?.onClick.AddListener(manager.RestartLevel);
         if (bannerTimer <= 0f) finalWaveBanner.SetActive(false);
     }
 
-    void HandleWave(int current, int total)
+void HandleWave(int current, int total)
     {
-        if (waveText != null) waveText.text = current > 0 ? $"WAVE {current}/{total}" : "GET READY";
+        if (waveText != null) waveText.text = current > 0 ? $"WAVE {current}/{total}" : "READY...";
     }
 
-    void HandleAlive(int value)
+void HandleAlive(int value)
     {
-        if (enemyText != null) enemyText.text = $"ZOMBIES {value}";
+        if (enemyText != null) enemyText.text = value > 0 ? $"{value} LEFT" : string.Empty;
     }
 
     void HandleState(GameState state)

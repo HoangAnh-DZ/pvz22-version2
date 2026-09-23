@@ -10,6 +10,12 @@ namespace PvZ2.Foundation
 public void ApplyLane(int lane, int laneCount)
         {
             if (visualRoot != null) visualRoot.localScale = baseScale;
+            int depth = (Mathf.Max(1, laneCount) - 1 - Mathf.Clamp(lane, 0, Mathf.Max(0, laneCount - 1))) * 20;
+            foreach (SpriteRenderer renderer in GetComponentsInChildren<SpriteRenderer>(true))
+            {
+                int localOrder = renderer.gameObject.name.Contains("Shadow") ? 2 : 10 + renderer.transform.GetSiblingIndex();
+                renderer.sortingOrder = depth + localOrder;
+            }
         }
     }
 }

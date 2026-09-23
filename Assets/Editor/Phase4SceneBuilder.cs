@@ -198,9 +198,9 @@ static void BuildEnvironment(GridManager grid, Sprite square)
         GameObject root = UiObject("Phase4 HUD", canvas.transform, new Color(.08f, .12f, .07f, .92f));
         RectTransform rect = root.GetComponent<RectTransform>();
         Anchor(rect, new Vector2(1f, 0f), new Vector2(1f, 0f), new Vector2(1f, 0f), new Vector2(-18f, 18f), new Vector2(190f, 76f));
-        Text wave = Label("Wave", root.transform, font, "GET READY", 22, new Color(1f, .88f, .35f));
+        Text wave = Label("Wave", root.transform, font, "READY...", 22, new Color(1f, .88f, .35f));
         Anchor(wave.rectTransform, new Vector2(0f, .5f), Vector2.one, new Vector2(.5f, .5f), Vector2.zero, new Vector2(-10f, 0f));
-        Text enemies = Label("Enemies", root.transform, font, "ZOMBIES 0", 15, Color.white);
+        Text enemies = Label("Enemies", root.transform, font, string.Empty, 15, Color.white);
         Anchor(enemies.rectTransform, Vector2.zero, new Vector2(1f, .5f), new Vector2(.5f, .5f), Vector2.zero, new Vector2(-10f, 0f));
 
         GameObject banner = UiObject("Final Wave Banner", canvas.transform, new Color(.58f, .08f, .035f, .96f));
@@ -211,23 +211,25 @@ static void BuildEnvironment(GridManager grid, Sprite square)
         Button victoryRestart;
         GameObject victory = Terminal("Victory Panel", canvas.transform, font, "VICTORY!", new Color(.14f, .5f, .18f, .97f), out victoryRestart);
         Button defeatRestart;
-        GameObject defeat = Terminal("Defeat Panel", canvas.transform, font, "THE ZOMBIES ATE YOUR BRAINS!", new Color(.48f, .08f, .055f, .97f), out defeatRestart);
+        GameObject defeat = Terminal("Defeat Panel", canvas.transform, font, "DEFEAT", new Color(.48f, .08f, .055f, .97f), out defeatRestart);
         root.AddComponent<WaveHudView>().Configure(waves, wave, enemies, banner, victory, defeat, victoryRestart, defeatRestart);
         banner.SetActive(false); victory.SetActive(false); defeat.SetActive(false);
     }
 
-    static GameObject Terminal(string name, Transform parent, Font font, string message, Color color, out Button restart)
+static GameObject Terminal(string name, Transform parent, Font font, string message, Color color, out Button restart)
     {
-        GameObject panel = UiObject(name, parent, color);
-        Anchor(panel.GetComponent<RectTransform>(), new Vector2(.5f, .5f), new Vector2(.5f, .5f), new Vector2(.5f, .5f), Vector2.zero, new Vector2(560f, 230f));
-        Text title = Label("Title", panel.transform, font, message, message == "VICTORY!" ? 48 : 30, Color.white);
-        Anchor(title.rectTransform, new Vector2(0f, .46f), Vector2.one, new Vector2(.5f, .5f), new Vector2(0f, 24f), new Vector2(-20f, -20f));
-        GameObject buttonGo = UiObject("Restart", panel.transform, new Color(.9f, .7f, .17f));
-        Anchor(buttonGo.GetComponent<RectTransform>(), new Vector2(.5f, 0f), new Vector2(.5f, 0f), new Vector2(.5f, 0f), new Vector2(0f, 28f), new Vector2(190f, 58f));
+        GameObject overlay = UiObject(name, parent, new Color(.02f, .025f, .015f, .68f));
+        Stretch(overlay.GetComponent<RectTransform>());
+        GameObject panel = UiObject("Card", overlay.transform, color);
+        Anchor(panel.GetComponent<RectTransform>(), new Vector2(.5f, .5f), new Vector2(.5f, .5f), new Vector2(.5f, .5f), Vector2.zero, new Vector2(500f, 214f));
+        Text title = Label("Title", panel.transform, font, message, 46, Color.white);
+        Anchor(title.rectTransform, new Vector2(0f, .46f), Vector2.one, new Vector2(.5f, .5f), new Vector2(0f, 22f), new Vector2(-20f, -20f));
+        GameObject buttonGo = UiObject("Restart", panel.transform, new Color(.92f, .68f, .16f));
+        Anchor(buttonGo.GetComponent<RectTransform>(), new Vector2(.5f, 0f), new Vector2(.5f, 0f), new Vector2(.5f, 0f), new Vector2(0f, 26f), new Vector2(178f, 54f));
         restart = buttonGo.AddComponent<Button>();
-        Text buttonText = Label("Text", buttonGo.transform, font, "RESTART", 24, new Color(.12f, .12f, .06f));
+        Text buttonText = Label("Text", buttonGo.transform, font, "RESTART", 22, new Color(.12f, .10f, .045f));
         Stretch(buttonText.rectTransform);
-        return panel;
+        return overlay;
     }
 
     static GameObject UiObject(string name, Transform parent, Color color)
