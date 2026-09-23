@@ -20,15 +20,18 @@ public static class PvZ2FoundationBuilder
         EnsureSortingLayer("Plants", 180000003);
 
         Sprite squareSprite = GetOrCreateSquareSprite();
+        Sprite sunSprite = GetOrCreateSunSprite();
+        SunCollectible sunPrefab = CreateSunPrefab(sunSprite, squareSprite);
+
         PlantBase peashooterPrefab = CreatePlantPrefab(
             "Peashooter", "Assets/Prefabs/Peashooter.prefab", squareSprite,
-            new Color(0.12f, 0.62f, 0.22f), new Vector3(0.38f, 0.68f, 1f), "pea");
+            new Color(0.12f, 0.62f, 0.22f), new Vector3(0.38f, 0.68f, 1f), "pea", sunPrefab);
         PlantBase sunflowerPrefab = CreatePlantPrefab(
             "Sunflower", "Assets/Prefabs/Sunflower.prefab", squareSprite,
-            new Color(1f, 0.73f, 0.08f), new Vector3(0.74f, 0.74f, 1f), "sun");
+            new Color(1f, 0.73f, 0.08f), new Vector3(0.74f, 0.74f, 1f), "sun", sunPrefab);
         PlantBase wallNutPrefab = CreatePlantPrefab(
             "WallNut", "Assets/Prefabs/WallNut.prefab", squareSprite,
-            new Color(0.48f, 0.27f, 0.09f), new Vector3(0.68f, 0.86f, 1f), "nut");
+            new Color(0.48f, 0.27f, 0.09f), new Vector3(0.68f, 0.86f, 1f), "nut", sunPrefab);
 
         PlantData peashooterData = CreatePlantData(
             "Assets/Data/Peashooter.asset", "peashooter", "Peashooter",
@@ -47,16 +50,30 @@ public static class PvZ2FoundationBuilder
         GridManager grid = CreateGrid(squareSprite);
 
         var plantContainer = new GameObject("Plants");
+        var sunContainer = new GameObject("Sun Collectibles");
         var systems = new GameObject("Gameplay Systems");
+
         ResourceManager resources = systems.AddComponent<ResourceManager>();
-        resources.ConfigureStartingSun(250, true);
+        resources.ConfigureStartingSun(50, true);
+
         PlantSelectionController selection = systems.AddComponent<PlantSelectionController>();
         PlantPlacementController placement = systems.AddComponent<PlantPlacementController>();
         placement.Configure(grid, selection, resources, plantContainer.transform);
-        systems.AddComponent<BoardPointerInput>().Configure(placement, camera);
-        selection.SelectPlant(peashooterData);
 
-        CreateInterface(resources, selection, peashooterData, sunflowerData, wallNutData);
+        BoardInteractionRouter router = systems.AddComponent<BoardInteractionRouter>();
+        router.Configure(placement);
+        systems.AddComponent<BoardPointerInput>().Configure(router, camera);
+
+        SkySunSpawner skySpawner = systems.AddComponent<SkySunSpawner>();
+        skySpawner.Configure(grid, resources, sunPrefab, sunContainer.transform, 8f, 2.6f);
+
+        CreatePlacementFeedback(
+            squareSprite, grid, selection, placement, camera, systems.transform);
+        selection.SelectPlant(sunflowerData);
+
+        CreateInterface(
+            resources, selection, placement, peashooterData, sunflowerData, wallNutData,
+            squareSprite, sunSprite);
         CreateEventSystem();
 
         PlayerSettings.defaultScreenWidth = 1600;
@@ -66,7 +83,7 @@ public static class PvZ2FoundationBuilder
         EditorBuildSettings.scenes = new[] { new EditorBuildSettingsScene(ScenePath, true) };
         AssetDatabase.SaveAssets();
         AssetDatabase.Refresh();
-        Debug.Log("PvZ2 Foundation prototype created successfully.");
+        Debug.Log("PvZ2 Phase 2 scene created successfully.");
     }
 
     private static Camera CreateCamera()
@@ -137,12 +154,38 @@ public static class PvZ2FoundationBuilder
         return grid;
     }
 
+    private static void CreatePlacementFeedback(
+        Sprite sprite,
+        GridManager grid,
+        PlantSelectionController selection,
+        PlantPlacementController placement,
+        Camera camera,
+        Transform parent)
+    {
+        var feedbackObject = new GameObject("Placement Feedback");
+        feedbackObject.transform.SetParent(parent, false);
+        feedbackObject.transform.localScale = new Vector3(
+            grid.CellSize.x * 0.94f,
+            grid.CellSize.y * 0.94f,
+            1f);
+        SpriteRenderer renderer = feedbackObject.AddComponent<SpriteRenderer>();
+        renderer.sprite = sprite;
+        renderer.sortingLayerName = "Board";
+        renderer.sortingOrder = 5;
+        renderer.enabled = false;
+        feedbackObject.AddComponent<PlacementFeedbackView>().Configure(
+            grid, selection, placement, camera, renderer);
+    }
+
     private static void CreateInterface(
         ResourceManager resources,
         PlantSelectionController selection,
+        PlantPlacementController placement,
         PlantData peashooter,
         PlantData sunflower,
-        PlantData wallNut)
+        PlantData wallNut,
+        Sprite squareSprite,
+        Sprite sunSprite)
     {
         var canvasObject = new GameObject(
             "Gameplay UI", typeof(RectTransform), typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
@@ -150,6 +193,7 @@ public static class PvZ2FoundationBuilder
         Canvas canvas = canvasObject.GetComponent<Canvas>();
         canvas.renderMode = RenderMode.ScreenSpaceOverlay;
         canvas.sortingOrder = 100;
+
         CanvasScaler scaler = canvasObject.GetComponent<CanvasScaler>();
         scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
         scaler.referenceResolution = new Vector2(1600f, 900f);
@@ -162,49 +206,70 @@ public static class PvZ2FoundationBuilder
         panelRect.anchorMin = new Vector2(0f, 1f);
         panelRect.anchorMax = new Vector2(0f, 1f);
         panelRect.pivot = new Vector2(0f, 1f);
-        panelRect.anchoredPosition = new Vector2(18f, -18f);
-        panelRect.sizeDelta = new Vector2(880f, 104f);
-        panelObject.GetComponent<Image>().color = new Color(0.06f, 0.1f, 0.07f, 0.9f);
+        panelRect.anchoredPosition = new Vector2(16f, -16f);
+        panelRect.sizeDelta = new Vector2(438f, 112f);
+        panelObject.GetComponent<Image>().color = new Color(0.05f, 0.09f, 0.055f, 0.94f);
 
         Font font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-        Text sunText = CreateText("Sun Counter", panelObject.transform, font, "SUN  250", 32,
-            new Color(1f, 0.86f, 0.22f));
-        RectTransform sunRect = sunText.rectTransform;
-        sunRect.anchorMin = new Vector2(0f, 0f);
-        sunRect.anchorMax = new Vector2(0f, 1f);
-        sunRect.pivot = new Vector2(0f, 0.5f);
-        sunRect.anchoredPosition = new Vector2(18f, 0f);
-        sunRect.sizeDelta = new Vector2(170f, -18f);
-        sunText.gameObject.AddComponent<SunCounterView>().Configure(resources, sunText);
+        CreateSunCounter(panelObject.transform, font, sunSprite, resources);
 
-        CreatePlantCard(panelObject.transform, font, selection, peashooter,
-            new Color(0.12f, 0.5f, 0.19f), 190f);
-        CreatePlantCard(panelObject.transform, font, selection, sunflower,
-            new Color(0.78f, 0.54f, 0.05f), 410f);
-        CreatePlantCard(panelObject.transform, font, selection, wallNut,
-            new Color(0.42f, 0.23f, 0.08f), 630f);
+        CreatePlantCard(panelObject.transform, font, selection, placement, resources, sunflower,
+            sunSprite, sunSprite, new Color(0.78f, 0.54f, 0.05f), 104f);
+        CreatePlantCard(panelObject.transform, font, selection, placement, resources, peashooter,
+            squareSprite, sunSprite, new Color(0.12f, 0.50f, 0.19f), 212f);
+        CreatePlantCard(panelObject.transform, font, selection, placement, resources, wallNut,
+            squareSprite, sunSprite, new Color(0.42f, 0.23f, 0.08f), 320f);
+    }
 
-        Text hintText = CreateText("Hint", canvasObject.transform, font,
-            "SELECT A PLANT  •  CLICK A LAWN CELL", 24, new Color(0.9f, 0.96f, 0.9f, 0.95f));
-        RectTransform hintRect = hintText.rectTransform;
-        hintRect.anchorMin = new Vector2(1f, 1f);
-        hintRect.anchorMax = new Vector2(1f, 1f);
-        hintRect.pivot = new Vector2(1f, 1f);
-        hintRect.anchoredPosition = new Vector2(-22f, -28f);
-        hintRect.sizeDelta = new Vector2(620f, 52f);
-        hintText.alignment = TextAnchor.MiddleRight;
+    private static void CreateSunCounter(
+        Transform parent,
+        Font font,
+        Sprite sunSprite,
+        ResourceManager resources)
+    {
+        var counter = new GameObject("Sun Counter", typeof(RectTransform), typeof(Image));
+        counter.layer = 5;
+        counter.transform.SetParent(parent, false);
+        RectTransform counterRect = counter.GetComponent<RectTransform>();
+        counterRect.anchorMin = new Vector2(0f, 0.5f);
+        counterRect.anchorMax = new Vector2(0f, 0.5f);
+        counterRect.pivot = new Vector2(0f, 0.5f);
+        counterRect.anchoredPosition = new Vector2(8f, 0f);
+        counterRect.sizeDelta = new Vector2(90f, 94f);
+        counter.GetComponent<Image>().color = new Color(0.13f, 0.17f, 0.09f, 1f);
+
+        Image icon = CreateImage(
+            "Sun Icon", counter.transform, sunSprite, new Color(1f, 0.84f, 0.12f));
+        SetRect(icon.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f),
+            new Vector2(0.5f, 1f), new Vector2(0f, -9f), new Vector2(42f, 42f));
+
+        Text value = CreateText(
+            "Value", counter.transform, font, resources.CurrentSun.ToString(), 26,
+            new Color(1f, 0.92f, 0.45f));
+        SetRect(value.rectTransform, new Vector2(0f, 0f), new Vector2(1f, 0f),
+            new Vector2(0.5f, 0f), new Vector2(0f, 5f), new Vector2(-8f, 36f));
+        counter.AddComponent<SunCounterView>().Configure(resources, value);
     }
 
     private static void CreatePlantCard(
         Transform parent,
         Font font,
         PlantSelectionController selection,
+        PlantPlacementController placement,
+        ResourceManager resources,
         PlantData data,
+        Sprite iconSprite,
+        Sprite sunSprite,
         Color color,
         float x)
     {
         var card = new GameObject(
-            $"{data.displayName} Card", typeof(RectTransform), typeof(Image), typeof(Button));
+            $"{data.displayName} Card",
+            typeof(RectTransform),
+            typeof(Image),
+            typeof(Button),
+            typeof(CanvasGroup),
+            typeof(Outline));
         card.layer = 5;
         card.transform.SetParent(parent, false);
         RectTransform rect = card.GetComponent<RectTransform>();
@@ -212,18 +277,52 @@ public static class PvZ2FoundationBuilder
         rect.anchorMax = new Vector2(0f, 0.5f);
         rect.pivot = new Vector2(0f, 0.5f);
         rect.anchoredPosition = new Vector2(x, 0f);
-        rect.sizeDelta = new Vector2(205f, 78f);
-        Image image = card.GetComponent<Image>();
-        image.color = color;
-        card.GetComponent<Button>().targetGraphic = image;
+        rect.sizeDelta = new Vector2(102f, 94f);
 
-        Text label = CreateText("Label", card.transform, font, data.displayName, 24, Color.white);
-        RectTransform labelRect = label.rectTransform;
-        labelRect.anchorMin = Vector2.zero;
-        labelRect.anchorMax = Vector2.one;
-        labelRect.offsetMin = new Vector2(8f, 4f);
-        labelRect.offsetMax = new Vector2(-8f, -4f);
-        card.AddComponent<PlantSelectionButton>().Configure(data, selection, label, image, color);
+        Image background = card.GetComponent<Image>();
+        background.color = color;
+        Button button = card.GetComponent<Button>();
+        button.targetGraphic = background;
+
+        Outline outline = card.GetComponent<Outline>();
+        outline.effectColor = new Color(1f, 0.93f, 0.35f, 1f);
+        outline.effectDistance = new Vector2(3f, -3f);
+        outline.enabled = false;
+
+        Image icon = CreateImage("Plant Icon", card.transform, iconSprite, Color.white);
+        SetRect(icon.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f),
+            new Vector2(0.5f, 1f), new Vector2(0f, -7f), new Vector2(38f, 38f));
+
+        Text nameLabel = CreateText(
+            "Name", card.transform, font, data.displayName, 13, Color.white);
+        SetRect(nameLabel.rectTransform, new Vector2(0f, 0f), new Vector2(1f, 0f),
+            new Vector2(0.5f, 0f), new Vector2(0f, 25f), new Vector2(-6f, 22f));
+
+        Image costIcon = CreateImage(
+            "Cost Icon", card.transform, sunSprite, new Color(1f, 0.88f, 0.18f));
+        SetRect(costIcon.rectTransform, new Vector2(0f, 0f), new Vector2(0f, 0f),
+            new Vector2(0f, 0f), new Vector2(12f, 7f), new Vector2(18f, 18f));
+
+        Text costLabel = CreateText(
+            "Cost", card.transform, font, data.sunCost.ToString(), 15, Color.white);
+        SetRect(costLabel.rectTransform, new Vector2(0f, 0f), new Vector2(0f, 0f),
+            new Vector2(0f, 0f), new Vector2(34f, 4f), new Vector2(58f, 24f));
+        costLabel.alignment = TextAnchor.MiddleLeft;
+
+        Image cooldown = CreateImage(
+            "Cooldown Overlay", card.transform, GetOrCreateSquareSprite(),
+            new Color(0.05f, 0.08f, 0.06f, 0.68f));
+        cooldown.type = Image.Type.Filled;
+        cooldown.fillMethod = Image.FillMethod.Vertical;
+        cooldown.fillOrigin = (int)Image.OriginVertical.Top;
+        cooldown.fillAmount = 0f;
+        cooldown.raycastTarget = false;
+        cooldown.enabled = false;
+        SetStretch(cooldown.rectTransform, Vector2.zero, Vector2.zero);
+
+        card.AddComponent<PlantSelectionButton>().Configure(
+            data, selection, placement, resources, nameLabel, costLabel, background,
+            icon, cooldown, outline, color);
     }
 
     private static void CreateEventSystem()
@@ -255,6 +354,45 @@ public static class PvZ2FoundationBuilder
         return text;
     }
 
+    private static Image CreateImage(
+        string name,
+        Transform parent,
+        Sprite sprite,
+        Color color)
+    {
+        var go = new GameObject(name, typeof(RectTransform), typeof(Image));
+        go.layer = 5;
+        go.transform.SetParent(parent, false);
+        Image image = go.GetComponent<Image>();
+        image.sprite = sprite;
+        image.color = color;
+        image.raycastTarget = false;
+        return image;
+    }
+
+    private static void SetRect(
+        RectTransform rect,
+        Vector2 anchorMin,
+        Vector2 anchorMax,
+        Vector2 pivot,
+        Vector2 position,
+        Vector2 size)
+    {
+        rect.anchorMin = anchorMin;
+        rect.anchorMax = anchorMax;
+        rect.pivot = pivot;
+        rect.anchoredPosition = position;
+        rect.sizeDelta = size;
+    }
+
+    private static void SetStretch(RectTransform rect, Vector2 minOffset, Vector2 maxOffset)
+    {
+        rect.anchorMin = Vector2.zero;
+        rect.anchorMax = Vector2.one;
+        rect.offsetMin = minOffset;
+        rect.offsetMax = maxOffset;
+    }
+
     private static GameObject CreateShape(
         string name,
         Transform parent,
@@ -277,13 +415,55 @@ public static class PvZ2FoundationBuilder
         return go;
     }
 
+    private static SunCollectible CreateSunPrefab(Sprite sunSprite, Sprite squareSprite)
+    {
+        const string path = "Assets/Prefabs/SunCollectible.prefab";
+        var root = new GameObject("SunCollectible");
+        root.transform.localScale = Vector3.one * 0.72f;
+
+        SpriteRenderer renderer = root.AddComponent<SpriteRenderer>();
+        renderer.sprite = sunSprite;
+        renderer.color = new Color(1f, 0.84f, 0.12f);
+        renderer.sortingLayerName = "Plants";
+        renderer.sortingOrder = 30;
+
+        CircleCollider2D collider = root.AddComponent<CircleCollider2D>();
+        collider.radius = 0.48f;
+        collider.isTrigger = true;
+
+        for (int i = 0; i < 8; i++)
+        {
+            float angle = i * 45f;
+            float radians = angle * Mathf.Deg2Rad;
+            var ray = new GameObject($"Ray {i}");
+            ray.transform.SetParent(root.transform, false);
+            ray.transform.localPosition = new Vector3(
+                Mathf.Cos(radians) * 0.66f,
+                Mathf.Sin(radians) * 0.66f,
+                0f);
+            ray.transform.localRotation = Quaternion.Euler(0f, 0f, angle);
+            ray.transform.localScale = new Vector3(0.28f, 0.09f, 1f);
+            SpriteRenderer rayRenderer = ray.AddComponent<SpriteRenderer>();
+            rayRenderer.sprite = squareSprite;
+            rayRenderer.color = new Color(1f, 0.72f, 0.06f);
+            rayRenderer.sortingLayerName = "Plants";
+            rayRenderer.sortingOrder = 29;
+        }
+
+        root.AddComponent<SunCollectible>();
+        GameObject prefabObject = PrefabUtility.SaveAsPrefabAsset(root, path);
+        Object.DestroyImmediate(root);
+        return prefabObject.GetComponent<SunCollectible>();
+    }
+
     private static PlantBase CreatePlantPrefab(
         string name,
         string path,
         Sprite sprite,
         Color primary,
         Vector3 bodyScale,
-        string decoration)
+        string decoration,
+        SunCollectible sunPrefab)
     {
         var root = new GameObject(name);
         SpriteRenderer renderer = root.AddComponent<SpriteRenderer>();
@@ -316,6 +496,12 @@ public static class PvZ2FoundationBuilder
         detailRenderer.color = detailColor;
         detailRenderer.sortingLayerName = "Plants";
         detailRenderer.sortingOrder = 11;
+
+        if (decoration == "sun")
+        {
+            root.AddComponent<SunflowerProducer>().Configure(
+                sunPrefab, null, null, 4f, 9f);
+        }
 
         GameObject prefabObject = PrefabUtility.SaveAsPrefabAsset(root, path);
         Object.DestroyImmediate(root);
@@ -354,26 +540,70 @@ public static class PvZ2FoundationBuilder
 
     private static Sprite GetOrCreateSquareSprite()
     {
-        const string spritePath = "Assets/Art/WhiteSquare.asset";
-        Sprite existing = AssetDatabase.LoadAllAssetsAtPath(spritePath).OfType<Sprite>().FirstOrDefault();
+        const string path = "Assets/Art/WhiteSquare.asset";
+        Sprite existing = AssetDatabase.LoadAllAssetsAtPath(path).OfType<Sprite>().FirstOrDefault();
         if (existing != null)
         {
             return existing;
         }
 
-        var texture = new Texture2D(32, 32, TextureFormat.RGBA32, false) { name = "WhiteSquareTexture" };
         var pixels = new Color32[32 * 32];
         for (int i = 0; i < pixels.Length; i++)
         {
             pixels[i] = new Color32(255, 255, 255, 255);
         }
 
+        return CreateGeneratedSprite(path, "WhiteSquareTexture", "WhiteSquare", pixels);
+    }
+
+    private static Sprite GetOrCreateSunSprite()
+    {
+        const string path = "Assets/Art/SunCircle.asset";
+        Sprite existing = AssetDatabase.LoadAllAssetsAtPath(path).OfType<Sprite>().FirstOrDefault();
+        if (existing != null)
+        {
+            return existing;
+        }
+
+        const int size = 32;
+        var pixels = new Color32[size * size];
+        Vector2 center = new((size - 1) * 0.5f, (size - 1) * 0.5f);
+        float radius = 14.5f;
+        for (int y = 0; y < size; y++)
+        {
+            for (int x = 0; x < size; x++)
+            {
+                float distance = Vector2.Distance(new Vector2(x, y), center);
+                byte alpha = distance <= radius ? (byte)255 : (byte)0;
+                pixels[y * size + x] = new Color32(255, 255, 255, alpha);
+            }
+        }
+
+        return CreateGeneratedSprite(path, "SunCircleTexture", "SunCircle", pixels);
+    }
+
+    private static Sprite CreateGeneratedSprite(
+        string path,
+        string textureName,
+        string spriteName,
+        Color32[] pixels)
+    {
+        var texture = new Texture2D(32, 32, TextureFormat.RGBA32, false)
+        {
+            name = textureName,
+            filterMode = FilterMode.Bilinear
+        };
         texture.SetPixels32(pixels);
         texture.Apply();
-        AssetDatabase.CreateAsset(texture, spritePath);
-        Sprite sprite = Sprite.Create(texture, new Rect(0f, 0f, 32f, 32f), new Vector2(0.5f, 0.5f), 32f);
-        sprite.name = "WhiteSquare";
-        AssetDatabase.AddObjectToAsset(sprite, spritePath);
+        AssetDatabase.CreateAsset(texture, path);
+
+        Sprite sprite = Sprite.Create(
+            texture,
+            new Rect(0f, 0f, 32f, 32f),
+            new Vector2(0.5f, 0.5f),
+            32f);
+        sprite.name = spriteName;
+        AssetDatabase.AddObjectToAsset(sprite, path);
         EditorUtility.SetDirty(texture);
         AssetDatabase.SaveAssets();
         return sprite;

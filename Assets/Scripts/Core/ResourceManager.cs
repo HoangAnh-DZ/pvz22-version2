@@ -5,7 +5,7 @@ namespace PvZ2.Foundation
 {
     public sealed class ResourceManager : MonoBehaviour
     {
-        [SerializeField, Min(0)] private int startingSun = 250;
+        [SerializeField, Min(0)] private int startingSun = 50;
         [SerializeField] private int currentSun;
 
         public int StartingSun => startingSun;
@@ -49,14 +49,14 @@ namespace PvZ2.Foundation
                 return false;
             }
 
-            currentSun = Mathf.Max(0, currentSun - amount);
+            currentSun -= amount;
             OnSunChanged?.Invoke(currentSun);
             return true;
         }
 
         public void ResetSun()
         {
-            currentSun = Mathf.Max(0, startingSun);
+            currentSun = startingSun;
             OnSunChanged?.Invoke(currentSun);
         }
     }

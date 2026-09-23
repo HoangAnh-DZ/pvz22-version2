@@ -11,6 +11,7 @@ GameObject:
   - component: {fileID: 295713933108817455}
   - component: {fileID: 3814415000417613011}
   - component: {fileID: 7289098769529027306}
+  - component: {fileID: 3542507297914026369}
   m_Layer: 0
   m_Name: Sunflower
   m_TagString: Untagged
@@ -103,6 +104,26 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   data: {fileID: 0}
   currentCell: {fileID: 0}
+--- !u!114 &3542507297914026369
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2445164731630740207}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cff95a2771f8e914dbba226a7b3f6d63, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  sunPrefab: {fileID: 8655651603419270607, guid: f4e2c4c7bc2c5fa46ac4fe881fbf3c85, type: 3}
+  resourceManager: {fileID: 0}
+  sunParent: {fileID: 0}
+  initialDelay: 4
+  productionInterval: 9
+  sunValue: 50
+  moveSpeed: 1.8
+  restLifetime: 9
 --- !u!1 &7103654217861560818
 GameObject:
   m_ObjectHideFlags: 0

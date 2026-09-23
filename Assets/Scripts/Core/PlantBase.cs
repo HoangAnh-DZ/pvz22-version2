@@ -29,6 +29,18 @@ namespace PvZ2.Foundation
             return true;
         }
 
+        public void ReleaseFromCell()
+        {
+            if (currentCell == null)
+            {
+                return;
+            }
+
+            GridCell occupiedCell = currentCell;
+            currentCell = null;
+            occupiedCell.Release(this);
+        }
+
         public void Die()
         {
             Destroy(gameObject);
@@ -36,11 +48,7 @@ namespace PvZ2.Foundation
 
         private void OnDestroy()
         {
-            if (currentCell != null)
-            {
-                currentCell.Release(this);
-                currentCell = null;
-            }
+            ReleaseFromCell();
         }
     }
 }

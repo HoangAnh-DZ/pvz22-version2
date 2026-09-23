@@ -50,7 +50,7 @@ public sealed class SunCounterView : MonoBehaviour
     {
         if (label != null)
         {
-            label.text = $"SUN  {amount}";
+            label.text = amount.ToString();
         }
     }
 }

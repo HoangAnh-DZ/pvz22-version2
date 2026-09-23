@@ -37,13 +37,22 @@ namespace PvZ2.Foundation
             return TryPlace(cell, selectionController.SelectedPlant, currentTime);
         }
 
+        public bool CanPlace(GridCell cell, PlantData data, float currentTime)
+        {
+            return cell != null &&
+                   data != null &&
+                   !cell.IsOccupied &&
+                   resourceManager != null &&
+                   data.prefab != null &&
+                   resourceManager.CanAfford(data.sunCost) &&
+                   IsCooldownReady(data, currentTime);
+        }
+
         public bool TryPlace(GridCell cell, PlantData data, float currentTime)
         {
             LastPlacedPlant = null;
 
-            if (cell == null || data == null || cell.IsOccupied || resourceManager == null ||
-                data.prefab == null || !resourceManager.CanAfford(data.sunCost) ||
-                !IsCooldownReady(data, currentTime))
+            if (!CanPlace(cell, data, currentTime))
             {
                 return false;
             }
@@ -67,7 +76,7 @@ namespace PvZ2.Foundation
 
             if (!resourceManager.SpendSun(data.sunCost))
             {
-                DestroyPlant(plant);
+                RollbackFailedPlacement(plant);
                 return false;
             }
 
@@ -90,6 +99,12 @@ namespace PvZ2.Foundation
             }
 
             return Mathf.Max(0f, readyTime - currentTime);
+        }
+
+        private static void RollbackFailedPlacement(PlantBase plant)
+        {
+            plant.ReleaseFromCell();
+            DestroyPlant(plant);
         }
 
         private static void DestroyPlant(PlantBase plant)

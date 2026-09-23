@@ -1,18 +1,20 @@
+using System.Collections.Generic;
 using PvZ2.Foundation;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.UI;
 #if ENABLE_INPUT_SYSTEM
 using UnityEngine.InputSystem;
 #endif
 
 public sealed class BoardPointerInput : MonoBehaviour
 {
-    [SerializeField] private PlantPlacementController placementController;
+    [SerializeField] private BoardInteractionRouter interactionRouter;
     [SerializeField] private Camera gameplayCamera;
 
-    public void Configure(PlantPlacementController placement, Camera camera)
+    public void Configure(BoardInteractionRouter router, Camera camera)
     {
-        placementController = placement;
+        interactionRouter = router;
         gameplayCamera = camera;
     }
 
@@ -26,13 +28,13 @@ public sealed class BoardPointerInput : MonoBehaviour
 
     private void Update()
     {
-        if (placementController == null || gameplayCamera == null ||
+        if (interactionRouter == null || gameplayCamera == null ||
             !TryGetPointerDown(out Vector2 screenPosition, out int pointerId))
         {
             return;
         }
 
-        if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject(pointerId))
+        if (IsPointerOverUi(screenPosition, pointerId))
         {
             return;
         }
@@ -40,7 +42,38 @@ public sealed class BoardPointerInput : MonoBehaviour
         Vector3 screenPoint = new(screenPosition.x, screenPosition.y, -gameplayCamera.transform.position.z);
         Vector3 worldPosition = gameplayCamera.ScreenToWorldPoint(screenPoint);
         worldPosition.z = 0f;
-        placementController.TryPlaceSelectedAtWorld(worldPosition, Time.time);
+        interactionRouter.HandleWorldClick(worldPosition, Time.time);
+    }
+
+    public static bool IsPointerOverUi(Vector2 screenPosition, int pointerId)
+    {
+        EventSystem eventSystem = EventSystem.current;
+        if (eventSystem == null)
+        {
+            return false;
+        }
+
+        if (eventSystem.IsPointerOverGameObject(pointerId))
+        {
+            return true;
+        }
+
+        var pointerData = new PointerEventData(eventSystem)
+        {
+            position = screenPosition,
+            pointerId = pointerId
+        };
+        var results = new List<RaycastResult>();
+        eventSystem.RaycastAll(pointerData, results);
+        foreach (RaycastResult result in results)
+        {
+            if (result.module is GraphicRaycaster)
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private static bool TryGetPointerDown(out Vector2 screenPosition, out int pointerId)
@@ -60,6 +93,14 @@ public sealed class BoardPointerInput : MonoBehaviour
             return true;
         }
 #else
+        if (Input.touchCount > 0 && Input.GetTouch(0).phase == TouchPhase.Began)
+        {
+            Touch touch = Input.GetTouch(0);
+            screenPosition = touch.position;
+            pointerId = touch.fingerId;
+            return true;
+        }
+
         if (Input.GetMouseButtonDown(0))
         {
             screenPosition = Input.mousePosition;
