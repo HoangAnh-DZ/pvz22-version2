@@ -50,5 +50,8 @@ TagManager:
   - name: Plants
     uniqueID: 180000003
     locked: 0
+  - name: Projectiles
+    uniqueID: 180000004
+    locked: 0
   m_RenderingLayers:
   - Default

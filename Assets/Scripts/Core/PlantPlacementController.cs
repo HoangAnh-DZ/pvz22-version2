@@ -10,7 +10,10 @@ namespace PvZ2.Foundation
         [SerializeField] private ResourceManager resourceManager;
         [SerializeField] private Transform plantParent;
 
-        private readonly Dictionary<PlantData, float> nextReadyTimes = new();
+        
+
+        public bool PlacementBlocked { get; private set; }
+private readonly Dictionary<PlantData, float> nextReadyTimes = new();
 
         public PlantBase LastPlacedPlant { get; private set; }
 
@@ -39,7 +42,8 @@ namespace PvZ2.Foundation
 
         public bool CanPlace(GridCell cell, PlantData data, float currentTime)
         {
-            return cell != null &&
+            return !PlacementBlocked &&
+                   cell != null &&
                    data != null &&
                    !cell.IsOccupied &&
                    resourceManager != null &&
@@ -118,5 +122,12 @@ namespace PvZ2.Foundation
                 DestroyImmediate(plant.gameObject);
             }
         }
-    }
+    
+
+public void SetPlacementBlocked(bool blocked)
+        {
+            PlacementBlocked = blocked;
+            if (blocked) selectionController?.ClearSelection();
+        }
+}
 }

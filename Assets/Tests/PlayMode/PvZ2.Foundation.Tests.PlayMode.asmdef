@@ -1,0 +1,19 @@
+{
+  "name": "PvZ2.Foundation.Tests.PlayMode",
+  "rootNamespace": "PvZ2.Foundation.Tests",
+  "references": [
+    "PvZ2.Foundation"
+  ],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": false,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false,
+  "optionalUnityReferences": [
+    "TestAssemblies"
+  ]
+}

@@ -1,0 +1,55 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c5835271b9f0b8347a36a6ae655d66ad, type: 3}
+  m_Name: FrontYardLevel
+  m_EditorClassIdentifier: 
+  id: front-yard-01
+  displayName: Front Yard
+  preparationDelay: 2.5
+  waveTransitionDelay: 2
+  waves:
+  - displayName: Wave 1
+    spawns:
+    - zombie: {fileID: 11400000, guid: 0382af099ea7f2844a80982941582dcb, type: 2}
+      amount: 3
+      startDelay: 0.5
+      spawnInterval: 2.2
+      laneMode: 0
+      fixedLane: 0
+  - displayName: Wave 2
+    spawns:
+    - zombie: {fileID: 11400000, guid: 0382af099ea7f2844a80982941582dcb, type: 2}
+      amount: 4
+      startDelay: 0.3
+      spawnInterval: 1.8
+      laneMode: 0
+      fixedLane: 0
+    - zombie: {fileID: 11400000, guid: d9f2d2b382da7a446bd4f35b1cb23efa, type: 2}
+      amount: 1
+      startDelay: 3
+      spawnInterval: 1
+      laneMode: 0
+      fixedLane: 0
+  - displayName: Final Wave
+    spawns:
+    - zombie: {fileID: 11400000, guid: 0382af099ea7f2844a80982941582dcb, type: 2}
+      amount: 5
+      startDelay: 0.2
+      spawnInterval: 1.35
+      laneMode: 0
+      fixedLane: 0
+    - zombie: {fileID: 11400000, guid: d9f2d2b382da7a446bd4f35b1cb23efa, type: 2}
+      amount: 2
+      startDelay: 1.8
+      spawnInterval: 2.4
+      laneMode: 0
+      fixedLane: 0

@@ -45,17 +45,12 @@ public sealed class BoardPointerInput : MonoBehaviour
         interactionRouter.HandleWorldClick(worldPosition, Time.time);
     }
 
-    public static bool IsPointerOverUi(Vector2 screenPosition, int pointerId)
+public static bool IsPointerOverUi(Vector2 screenPosition, int pointerId)
     {
         EventSystem eventSystem = EventSystem.current;
         if (eventSystem == null)
         {
             return false;
-        }
-
-        if (eventSystem.IsPointerOverGameObject(pointerId))
-        {
-            return true;
         }
 
         var pointerData = new PointerEventData(eventSystem)
@@ -67,7 +62,13 @@ public sealed class BoardPointerInput : MonoBehaviour
         eventSystem.RaycastAll(pointerData, results);
         foreach (RaycastResult result in results)
         {
-            if (result.module is GraphicRaycaster)
+            if (!(result.module is GraphicRaycaster) || result.gameObject == null)
+            {
+                continue;
+            }
+
+            Selectable selectable = result.gameObject.GetComponentInParent<Selectable>();
+            if (selectable != null && selectable.IsActive())
             {
                 return true;
             }

@@ -18,20 +18,24 @@ public static class PvZ2FoundationBuilder
         EnsureSortingLayer("Background", 180000001);
         EnsureSortingLayer("Board", 180000002);
         EnsureSortingLayer("Plants", 180000003);
+        EnsureSortingLayer("Projectiles", 180000004);
+
 
         Sprite squareSprite = GetOrCreateSquareSprite();
         Sprite sunSprite = GetOrCreateSunSprite();
         SunCollectible sunPrefab = CreateSunPrefab(sunSprite, squareSprite);
+        PeaProjectile peaPrefab = CreatePeaPrefab(sunSprite);
+
 
         PlantBase peashooterPrefab = CreatePlantPrefab(
             "Peashooter", "Assets/Prefabs/Peashooter.prefab", squareSprite,
-            new Color(0.12f, 0.62f, 0.22f), new Vector3(0.38f, 0.68f, 1f), "pea", sunPrefab);
+            new Color(0.12f, 0.62f, 0.22f), new Vector3(0.38f, 0.68f, 1f), "pea", sunPrefab, peaPrefab);
         PlantBase sunflowerPrefab = CreatePlantPrefab(
             "Sunflower", "Assets/Prefabs/Sunflower.prefab", squareSprite,
-            new Color(1f, 0.73f, 0.08f), new Vector3(0.74f, 0.74f, 1f), "sun", sunPrefab);
+            new Color(1f, 0.73f, 0.08f), new Vector3(0.74f, 0.74f, 1f), "sun", sunPrefab, null);
         PlantBase wallNutPrefab = CreatePlantPrefab(
             "WallNut", "Assets/Prefabs/WallNut.prefab", squareSprite,
-            new Color(0.48f, 0.27f, 0.09f), new Vector3(0.68f, 0.86f, 1f), "nut", sunPrefab);
+            new Color(0.48f, 0.27f, 0.09f), new Vector3(0.68f, 0.86f, 1f), "nut", sunPrefab, null);
 
         PlantData peashooterData = CreatePlantData(
             "Assets/Data/Peashooter.asset", "peashooter", "Peashooter",
@@ -43,6 +47,18 @@ public static class PvZ2FoundationBuilder
             "Assets/Data/WallNut.asset", "wall-nut", "Wall-Nut",
             wallNutPrefab, 50, 12f, 500, 0, 0f);
 
+        ZombieController normalZombiePrefab = CreateZombiePrefab(
+            "NormalZombie", "Assets/Prefabs/NormalZombie.prefab", squareSprite, sunSprite, false);
+        ZombieController coneheadZombiePrefab = CreateZombiePrefab(
+            "ConeheadZombie", "Assets/Prefabs/ConeheadZombie.prefab", squareSprite, sunSprite, true);
+        ZombieData normalZombieData = CreateZombieData(
+            "Assets/Data/NormalZombie.asset", "normal-zombie", "Normal Zombie",
+            normalZombiePrefab, 180, 0.48f, 0.72f, 20, 1f);
+        ZombieData coneheadZombieData = CreateZombieData(
+            "Assets/Data/ConeheadZombie.asset", "conehead-zombie", "Conehead Zombie",
+            coneheadZombiePrefab, 420, 0.42f, 0.72f, 20, 1f);
+
+
         var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
         Camera camera = CreateCamera();
         CreateGlobalLight();
@@ -50,8 +66,13 @@ public static class PvZ2FoundationBuilder
         GridManager grid = CreateGrid(squareSprite);
 
         var plantContainer = new GameObject("Plants");
+        var zombieContainer = new GameObject("Zombies");
+        var projectileContainer = new GameObject("Projectiles");
         var sunContainer = new GameObject("Sun Collectibles");
         var systems = new GameObject("Gameplay Systems");
+
+        LaneCombatRegistry combatRegistry = systems.AddComponent<LaneCombatRegistry>();
+        combatRegistry.Configure(grid.Rows);
 
         ResourceManager resources = systems.AddComponent<ResourceManager>();
         resources.ConfigureStartingSun(50, true);
@@ -64,7 +85,10 @@ public static class PvZ2FoundationBuilder
         router.Configure(placement);
         systems.AddComponent<BoardPointerInput>().Configure(router, camera);
 
-        SkySunSpawner skySpawner = systems.AddComponent<SkySunSpawner>();
+        BasicZombieSpawner zombieSpawner = systems.AddComponent<BasicZombieSpawner>();
+        zombieSpawner.Configure(
+            combatRegistry, grid, zombieContainer.transform, 6.15f, -6.5f,
+            normalZombieData, coneheadZombieData);SkySunSpawner skySpawner = systems.AddComponent<SkySunSpawner>();
         skySpawner.Configure(grid, resources, sunPrefab, sunContainer.transform, 8f, 2.6f);
 
         CreatePlacementFeedback(
@@ -208,7 +232,9 @@ public static class PvZ2FoundationBuilder
         panelRect.pivot = new Vector2(0f, 1f);
         panelRect.anchoredPosition = new Vector2(16f, -16f);
         panelRect.sizeDelta = new Vector2(438f, 112f);
-        panelObject.GetComponent<Image>().color = new Color(0.05f, 0.09f, 0.055f, 0.94f);
+        Image panelImage = panelObject.GetComponent<Image>();
+        panelImage.color = new Color(0.05f, 0.09f, 0.055f, 0.94f);
+        panelImage.raycastTarget = false;
 
         Font font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
         CreateSunCounter(panelObject.transform, font, sunSprite, resources);
@@ -236,7 +262,9 @@ public static class PvZ2FoundationBuilder
         counterRect.pivot = new Vector2(0f, 0.5f);
         counterRect.anchoredPosition = new Vector2(8f, 0f);
         counterRect.sizeDelta = new Vector2(90f, 94f);
-        counter.GetComponent<Image>().color = new Color(0.13f, 0.17f, 0.09f, 1f);
+        Image counterBackground = counter.GetComponent<Image>();
+        counterBackground.color = new Color(0.13f, 0.17f, 0.09f, 1f);
+        counterBackground.raycastTarget = false;
 
         Image icon = CreateImage(
             "Sun Icon", counter.transform, sunSprite, new Color(1f, 0.84f, 0.12f));
@@ -463,7 +491,8 @@ public static class PvZ2FoundationBuilder
         Color primary,
         Vector3 bodyScale,
         string decoration,
-        SunCollectible sunPrefab)
+        SunCollectible sunPrefab,
+        PeaProjectile peaPrefab)
     {
         var root = new GameObject(name);
         SpriteRenderer renderer = root.AddComponent<SpriteRenderer>();
@@ -502,6 +531,13 @@ public static class PvZ2FoundationBuilder
             root.AddComponent<SunflowerProducer>().Configure(
                 sunPrefab, null, null, 4f, 9f);
         }
+
+        if (decoration == "pea")
+        {
+            root.AddComponent<PeashooterController>().Configure(
+                peaPrefab, null, null, 5f, 6.6f);
+        }
+
 
         GameObject prefabObject = PrefabUtility.SaveAsPrefabAsset(root, path);
         Object.DestroyImmediate(root);
@@ -634,5 +670,103 @@ public static class PvZ2FoundationBuilder
         if (newId != null) newId.longValue = uniqueId;
         if (locked != null) locked.boolValue = false;
         tagManager.ApplyModifiedProperties();
+    }
+
+
+private static ZombieData CreateZombieData(
+        string path,
+        string id,
+        string displayName,
+        ZombieController prefab,
+        int health,
+        float movementSpeed,
+        float attackRange,
+        int attackDamage,
+        float attackInterval)
+    {
+        ZombieData data = AssetDatabase.LoadAssetAtPath<ZombieData>(path);
+        if (data == null)
+        {
+            data = ScriptableObject.CreateInstance<ZombieData>();
+            AssetDatabase.CreateAsset(data, path);
+        }
+
+        data.id = id;
+        data.displayName = displayName;
+        data.prefab = prefab;
+        data.maxHealth = Mathf.Max(1, health);
+        data.movementSpeed = Mathf.Max(0f, movementSpeed);
+        data.attackRange = Mathf.Max(0f, attackRange);
+        data.attackDamage = Mathf.Max(0, attackDamage);
+        data.attackInterval = Mathf.Max(0.01f, attackInterval);
+        EditorUtility.SetDirty(data);
+        return data;
+    }
+
+
+private static ZombieController CreateZombiePrefab(
+        string name,
+        string path,
+        Sprite squareSprite,
+        Sprite roundSprite,
+        bool conehead)
+    {
+        var root = new GameObject(name);
+        root.transform.localScale = new Vector3(0.62f, 0.92f, 1f);
+        SpriteRenderer body = root.AddComponent<SpriteRenderer>();
+        body.sprite = squareSprite;
+        body.color = conehead
+            ? new Color(0.36f, 0.43f, 0.31f)
+            : new Color(0.43f, 0.50f, 0.39f);
+        body.sortingLayerName = "Plants";
+        body.sortingOrder = 12;
+
+        var head = new GameObject("Head");
+        head.transform.SetParent(root.transform, false);
+        head.transform.localPosition = new Vector3(0f, 0.58f, 0f);
+        head.transform.localScale = new Vector3(0.86f, 0.62f, 1f);
+        SpriteRenderer headRenderer = head.AddComponent<SpriteRenderer>();
+        headRenderer.sprite = roundSprite;
+        headRenderer.color = new Color(0.52f, 0.59f, 0.43f);
+        headRenderer.sortingLayerName = "Plants";
+        headRenderer.sortingOrder = 13;
+
+        if (conehead)
+        {
+            var cone = new GameObject("Cone");
+            cone.transform.SetParent(root.transform, false);
+            cone.transform.localPosition = new Vector3(0f, 1.02f, 0f);
+            cone.transform.localRotation = Quaternion.Euler(0f, 0f, 45f);
+            cone.transform.localScale = new Vector3(0.42f, 0.62f, 1f);
+            SpriteRenderer coneRenderer = cone.AddComponent<SpriteRenderer>();
+            coneRenderer.sprite = squareSprite;
+            coneRenderer.color = new Color(0.95f, 0.43f, 0.06f);
+            coneRenderer.sortingLayerName = "Plants";
+            coneRenderer.sortingOrder = 14;
+        }
+
+        root.AddComponent<BoxCollider2D>().isTrigger = true;
+        root.AddComponent<ZombieController>();
+        GameObject prefabObject = PrefabUtility.SaveAsPrefabAsset(root, path);
+        Object.DestroyImmediate(root);
+        return prefabObject.GetComponent<ZombieController>();
+    }
+
+
+private static PeaProjectile CreatePeaPrefab(Sprite sprite)
+    {
+        const string path = "Assets/Prefabs/PeaProjectile.prefab";
+        var root = new GameObject("PeaProjectile");
+        root.transform.localScale = Vector3.one * 0.24f;
+        SpriteRenderer renderer = root.AddComponent<SpriteRenderer>();
+        renderer.sprite = sprite;
+        renderer.color = new Color(0.25f, 0.92f, 0.18f);
+        renderer.sortingLayerName = "Projectiles";
+        renderer.sortingOrder = 20;
+        root.AddComponent<CircleCollider2D>().isTrigger = true;
+        root.AddComponent<PeaProjectile>();
+        GameObject prefabObject = PrefabUtility.SaveAsPrefabAsset(root, path);
+        Object.DestroyImmediate(root);
+        return prefabObject.GetComponent<PeaProjectile>();
     }
 }
